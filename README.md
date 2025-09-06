@@ -1,61 +1,151 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# User API Project
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+# First Task — Database Design (Benchmarks per Account)
 
-## About Laravel
+## MER
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+The following diagram represents the conceptual model:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+![ERM](public/assets/Diagrama-mer.png)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Entities
+- **Benchmark**: represents a set of controls.
+- **Control**: belongs to a Benchmark and has a current state (ok/alarm).
+- **Account**: represents a user/owner who can have multiple Benchmarks.
+- **AccountBenchmark**: join table for the many-to-many relationship between Account and Benchmark.
+- **ControlStateHistory**: stores each state change for a given control and account, with timestamp.
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Use Cases & Recommended Indexes
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### Q1) List benchmarks with their controls and the current state for an account
+- **Index**: `(account_id, benchmark_id)` on **AccountBenchmark**  
+  *Purpose*: Quickly retrieve all benchmarks associated with an account.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Q2) List benchmarks with their controls and state changes within a time range
+- **Index**: `(account_id, control_id, changed_at)` on **ControlStateHistory**  
+  *Purpose*: Efficient filtering by account, control, and time interval.
 
-## Laravel Sponsors
+### Q3) Get benchmarks with their controls and the state at a specific date/time (snapshot)
+- **Index**: `(account_id, control_id, changed_at)` on **ControlStateHistory**  
+  *Purpose*: Quickly find the latest record before or at that timestamp.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+---
 
-### Premium Partners
+# Second Task — REST API of Users
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## REST API — Users
 
-## Contributing
+This API allows reading user data from a mock JSON file (`mock-users.json`) with filtering, pagination, and proper HTTP responses.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
 
-## Code of Conduct
+## Getting Started
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Clone the repository and enter the project folder:
+```bash
+git clone https://github.com/Carloshipol/user-api.git
+cd user-api
+```
+### Running the API
 
-## Security Vulnerabilities
+```bash
+docker-compose up --build
+```
+The API will be available at `http://localhost:8000/api`.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Example Requests
 
-## License
+**List users (default pagination):**
+```bash
+curl http://localhost:8000/api/users
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+**List users with filters:**
+```bash
+curl "http://localhost:8000/api/users?page=2&page_size=5&q=Bruno&role=manager&is_active=true"
+```
+
+**Get user by ID:**
+```bash
+curl http://localhost:8000/api/users/1
+```
+### Base URL
+```
+http://localhost:8000/api
+```
+
+### Endpoints
+
+#### GET `/users`
+Retrieve a list of users with optional filters and pagination.
+
+**Query Parameters:**
+| Parameter   | Type    | Default | Description |
+|------------|---------|---------|-------------|
+| `page`     | int     | 1       | Page number |
+| `page_size`| int     | 10      | Items per page (max 50) |
+| `q`        | string  | —       | Search by name or email |
+| `role`     | string  | —       | Filter by role (e.g., admin, manager) |
+| `is_active`| boolean | —       | Filter by active status (`true`/`false`) |
+
+**Response 200:**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Bruno Nogueira",
+      "email": "bnogueira1@widgets.org",
+      "role": "manager",
+      "is_active": true,
+      "created_at": "2024-05-26T17:11:48Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "page_size": 10,
+    "total": 25,
+    "total_pages": 3
+  }
+}
+```
+
+#### GET `/users/{id}`
+Retrieve a user by ID.
+
+**Response 200:**
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Bruno Nogueira",
+    "email": "bnogueira1@widgets.org",
+    "role": "manager",
+    "is_active": true,
+    "created_at": "2024-05-26T17:11:48Z"
+  }
+}
+```
+
+**Response 404:**
+```json
+{
+  "error": "User not found"
+}
+```
+
+### Features Implemented
+- Pagination (`page`, `page_size`)  
+- Search by name/email (`q`)  
+- Filtering by `role` and `is_active`  
+- JSON response envelope with `data` and `pagination`  
+- Error handling with proper HTTP status codes  
+- Logging with Laravel `Log::info` and `Log::warning`  
+- CORS configured via `config/cors.php`  
+- Full Docker support with multi-stage build, auto-generated APP_KEY, and Apache ready on port 8000
+- Unit & Feature Tests**: PHPUnit tests for `/users` and `/users/{id}`, including pagination, filtering, and 404 responses.
+
+---
+
+
