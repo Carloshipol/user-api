@@ -1,0 +1,14 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laravel_api
+    ports:
+      - "8000:80"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: true
+      CORS_ALLOW_ORIGIN: "*"
+    # volumes:
+    #  - .:/var/www/html
