@@ -39,6 +39,12 @@ The following diagram represents the conceptual model:
 
 This API allows reading user data from a mock JSON file (`mock-users.json`) with filtering, pagination, and proper HTTP responses.
 
+## Requirements
+
+Before running the project, make sure you have the following tools installed:
+
+- [Docker](https://docs.docker.com/get-docker/) 
+- [Docker Compose](https://docs.docker.com/compose/install/)  
 
 ## Getting Started
 
