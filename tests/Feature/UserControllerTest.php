@@ -12,7 +12,7 @@ class UserControllerTest extends TestCase
     {
         parent::setUp();
         // Carrega o mock do JSON
-        $this->mockUsers = json_decode(file_get_contents(storage_path('app/mock-users.json')), true);
+        $this->mockUsers = json_decode(file_get_contents(database_path('mock-users.json')), true);
     }
 
     /** @test */

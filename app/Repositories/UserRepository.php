@@ -8,7 +8,7 @@ class UserRepository
 
     public function __construct()
     {
-        $path = storage_path('app/mock-users.json');
+        $path = database_path('mock-users.json');
         $this->users = json_decode(file_get_contents($path), true);
     }
 
